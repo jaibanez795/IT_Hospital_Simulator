@@ -1,4 +1,3 @@
-```markdown
 # Game Design Document (GDD)
 
 ## "IT del Hospital" *(Título de trabajo)*
@@ -50,9 +49,7 @@ Eventos aleatorios (supervisor aparece, emergencia IT, chisme útil)
      │
      ▼
 FIN DEL DÍA → Evaluación → Siguiente día
-```
 
----
 
 ## 4. Mecánicas Principales
 
@@ -202,7 +199,7 @@ Para mantener cada día fresco:
 
 ## 8. Mapa del Hospital
 
-```
+
 ┌─────────────────────────────────────────┐
 │  AZOTEA (escondite nivel 3)             │
 ├─────────┬───────────┬───────────────────┤
@@ -217,9 +214,8 @@ Para mantener cada día fresco:
 │ Cafete- │ Recursos  │  Estaciona-       │
 │ ría     │ Humanos   │  miento           │
 └─────────┴───────────┴───────────────────┘
-```
 
----
+
 
 ## 9. Monetización (si aplica)
 
@@ -263,4 +259,3 @@ Para mantener cada día fresco:
 2. **Definir el alcance del prototipo**: Un día completo con 2-3 NPCs y el sistema de tickets
 3. **Elegir motor**: Unity sería ideal por la comunidad y recursos
 4. **Arte conceptual**: Definir el estilo visual antes de modelar
-```
