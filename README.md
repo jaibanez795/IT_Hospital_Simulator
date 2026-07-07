@@ -27,7 +27,7 @@ El hospital es un ecosistema social complejo: doctores estresados, enfermeras qu
 
 ## 3. Loop Principal de Juego
 
-```
+
 INICIO DEL DÍA
      │
      ▼
