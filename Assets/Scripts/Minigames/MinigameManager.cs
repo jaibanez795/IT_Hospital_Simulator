@@ -5,6 +5,7 @@ public class MinigameManager : MonoBehaviour
     public static MinigameManager Instance { get; private set; }
 
     [SerializeField] CableMinigame cableMinigame;
+    [SerializeField] RouterMinigame routerMinigame;
 
     MinigameBase activeMinigame;
     Ticket activeTicket;
@@ -25,6 +26,11 @@ public class MinigameManager : MonoBehaviour
         if (cableMinigame != null)
         {
             cableMinigame.Initialize(this);
+        }
+
+        if (routerMinigame != null)
+        {
+            routerMinigame.Initialize(this);
         }
     }
 
@@ -52,7 +58,7 @@ public class MinigameManager : MonoBehaviour
         return true;
     }
 
-    public void FinishMinigame(TicketResult result)
+    public void FinishMinigame(TicketResult result, string customMessage = null)
     {
         Ticket ticket = activeTicket;
         CloseActiveMinigame();
@@ -60,7 +66,7 @@ public class MinigameManager : MonoBehaviour
 
         if (ticket != null)
         {
-            ticket.CompleteTicket(result);
+            ticket.CompleteTicket(result, customMessage);
         }
     }
 
@@ -108,6 +114,8 @@ public class MinigameManager : MonoBehaviour
         {
             case TicketType.Cable:
                 return cableMinigame;
+            case TicketType.Router:
+                return routerMinigame;
             default:
                 return null;
         }

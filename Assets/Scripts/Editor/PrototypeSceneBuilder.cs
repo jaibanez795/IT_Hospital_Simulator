@@ -86,7 +86,7 @@ public static class PrototypeSceneBuilder
         }
 
         UIManager uiManager = CreateCanvasUI();
-        MinigameSetup.SetupCableMinigame();
+        MinigameSetup.SetupAllMinigames();
 
         EditorSceneManager.SaveScene(scene, ScenePath);
         AddSceneToBuildSettings(ScenePath);

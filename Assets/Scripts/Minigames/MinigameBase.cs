@@ -25,6 +25,11 @@ public abstract class MinigameBase : MonoBehaviour
         Manager?.FinishMinigame(result);
     }
 
+    protected void CompleteMinigame(TicketResult result, string customMessage)
+    {
+        Manager?.FinishMinigame(result, customMessage);
+    }
+
     protected void CancelMinigame()
     {
         Manager?.CancelMinigame();

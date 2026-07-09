@@ -165,7 +165,7 @@ public class Ticket : MonoBehaviour, IInteractable
         CompleteTicket(RollRandomResult());
     }
 
-    public void CompleteTicket(TicketResult result)
+    public void CompleteTicket(TicketResult result, string customMessage = null)
     {
         if (isCompleted)
         {
@@ -176,7 +176,7 @@ public class Ticket : MonoBehaviour, IInteractable
         isInProgress = false;
         ApplyResult(result);
 
-        GameManager.Instance?.ShowTemporaryMessage(GetCompletionMessage(result));
+        GameManager.Instance?.ShowTemporaryMessage(customMessage ?? GetCompletionMessage(result));
 
         Destroy(gameObject);
     }
