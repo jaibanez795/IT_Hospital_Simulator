@@ -71,6 +71,7 @@ public class HideZone : MonoBehaviour
         }
 
         playersInside.Add(player);
+        player.SetInHideZone(true);
         catchTimers[player] = 0f;
     }
 
@@ -83,6 +84,7 @@ public class HideZone : MonoBehaviour
         }
 
         playersInside.Remove(player);
+        player.SetInHideZone(false);
         catchTimers.Remove(player);
     }
 }

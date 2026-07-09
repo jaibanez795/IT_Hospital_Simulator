@@ -13,6 +13,7 @@ public class UIManager : MonoBehaviour
 
     [Header("Messages")]
     [SerializeField] Text temporaryMessageText;
+    [SerializeField] Text globalEventBannerText;
     [SerializeField] GameObject endScreenPanel;
     [SerializeField] Text endScreenTitleText;
     [SerializeField] Text endScreenReasonText;
@@ -81,6 +82,16 @@ public class UIManager : MonoBehaviour
     public void ClearTemporaryMessage()
     {
         SetText(temporaryMessageText, string.Empty);
+    }
+
+    public void SetGlobalEventBanner(string message)
+    {
+        SetText(globalEventBannerText, message);
+    }
+
+    public void ClearGlobalEventBanner()
+    {
+        SetText(globalEventBannerText, string.Empty);
     }
 
     public void ShowEndScreen(GameState state, string reason)

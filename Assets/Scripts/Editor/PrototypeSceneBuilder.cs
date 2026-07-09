@@ -38,6 +38,10 @@ public static class PrototypeSceneBuilder
         Transform urgencias = CreateZoneMarker(environment.transform, "Zone_Urgencias", urgenciasMat, new Vector3(0f, 0.5f, 8f), new Vector3(6f, 1f, 6f));
         Transform servidores = CreateZoneMarker(environment.transform, "Zone_CuartoServidores", servidoresMat, new Vector3(8f, 0.5f, 0f), new Vector3(6f, 1f, 6f));
 
+        WorldLabelsSetup.CreateOrUpdateLabel(recepcion, "ZoneLabel", "Recepción", new Vector3(0f, 1.4f, 0f), 0.14f);
+        WorldLabelsSetup.CreateOrUpdateLabel(urgencias, "ZoneLabel", "Urgencias", new Vector3(0f, 1.4f, 0f), 0.14f);
+        WorldLabelsSetup.CreateOrUpdateLabel(servidores, "ZoneLabel", "Cuarto Servidores", new Vector3(0f, 1.4f, 0f), 0.14f);
+
         CreateSpawnPoint(recepcion, "SpawnPoint", Vector3.zero);
         CreateSpawnPoint(urgencias, "SpawnPoint", Vector3.zero);
         CreateSpawnPoint(servidores, "SpawnPoint", Vector3.zero);
@@ -63,6 +67,10 @@ public static class PrototypeSceneBuilder
         GameObject spawnerObject = new GameObject("TicketSpawner");
         spawnerObject.transform.SetParent(systemsRoot.transform);
         TicketSpawner spawner = spawnerObject.AddComponent<TicketSpawner>();
+
+        GameObject eventManagerObject = new GameObject("GlobalEventManager");
+        eventManagerObject.transform.SetParent(systemsRoot.transform);
+        eventManagerObject.AddComponent<GlobalEventManager>();
 
         Transform[] spawnPoints =
         {
@@ -108,6 +116,8 @@ public static class PrototypeSceneBuilder
         CreateFolder("Assets/Scripts/Tickets");
         CreateFolder("Assets/Scripts/Zones");
         CreateFolder("Assets/Scripts/UI");
+        CreateFolder("Assets/Scripts/Events");
+        CreateFolder("Assets/Scripts/Minigames");
         CreateFolder("Assets/Scripts/Editor");
         CreateFolder("Assets/Prefabs");
         CreateFolder("Assets/Materials");
@@ -271,6 +281,13 @@ public static class PrototypeSceneBuilder
         playerSO.FindProperty("moveSpeed").floatValue = 30f;
         playerSO.ApplyModifiedPropertiesWithoutUndo();
 
+        WorldLabelsSetup.CreateOrUpdateLabel(
+            player.transform,
+            "PlayerLabel",
+            playerIndex == 1 ? "J1" : "J2",
+            new Vector3(0f, 1.3f, 0f),
+            0.12f);
+
         return controller;
     }
 
@@ -299,6 +316,13 @@ public static class PrototypeSceneBuilder
         Text temporaryMessageText = CreateLabel(canvasObject.transform, "TemporaryMessageText", new Vector2(0f, -180f), new Vector2(0.5f, 1f), font, 20);
         temporaryMessageText.alignment = TextAnchor.MiddleCenter;
 
+        Text globalEventBannerText = CreateLabel(canvasObject.transform, "GlobalEventBannerText", new Vector2(0f, -145f), new Vector2(0.5f, 1f), font, 20);
+        globalEventBannerText.alignment = TextAnchor.MiddleCenter;
+        globalEventBannerText.fontStyle = FontStyle.Bold;
+        globalEventBannerText.color = new Color(1f, 0.85f, 0.2f, 1f);
+        globalEventBannerText.text = string.Empty;
+        globalEventBannerText.raycastTarget = false;
+
         GameObject endPanel = CreatePanel(canvasObject.transform, "EndScreenPanel");
         Text endTitle = CreateLabel(endPanel.transform, "EndTitleText", Vector2.zero, new Vector2(0.5f, 0.5f), font, 36);
         endTitle.rectTransform.anchoredPosition = new Vector2(0f, 40f);
@@ -316,6 +340,7 @@ public static class PrototypeSceneBuilder
         uiSO.FindProperty("sospechaJ1Text").objectReferenceValue = sospechaJ1Text;
         uiSO.FindProperty("sospechaJ2Text").objectReferenceValue = sospechaJ2Text;
         uiSO.FindProperty("temporaryMessageText").objectReferenceValue = temporaryMessageText;
+        uiSO.FindProperty("globalEventBannerText").objectReferenceValue = globalEventBannerText;
         uiSO.FindProperty("endScreenPanel").objectReferenceValue = endPanel;
         uiSO.FindProperty("endScreenTitleText").objectReferenceValue = endTitle;
         uiSO.FindProperty("endScreenReasonText").objectReferenceValue = endReason;

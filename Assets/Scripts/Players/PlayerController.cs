@@ -7,19 +7,60 @@ public class PlayerController : MonoBehaviour
     [SerializeField] int playerIndex = 1;
     [SerializeField] float moveSpeed = 30f;
     [SerializeField] float interactionRadius = 2f;
+    [SerializeField] float idleThresholdSeconds = 3f;
 
     float sospecha;
+    float idleTime;
     bool minigameLocked;
+    bool inHideZone;
+    bool hasMovementInput;
     Rigidbody rb;
+    Vector3 lastFramePosition;
     IInteractable nearbyInteractable;
 
     public int PlayerIndex => playerIndex;
     public float Sospecha => sospecha;
     public bool IsMinigameLocked => minigameLocked;
+    public bool IsInHideZone => inHideZone;
 
     public void SetMinigameLocked(bool locked)
     {
         minigameLocked = locked;
+    }
+
+    public void SetInHideZone(bool inside)
+    {
+        inHideZone = inside;
+    }
+
+    public bool AppearsOccupied()
+    {
+        if (minigameLocked)
+        {
+            return true;
+        }
+
+        if (inHideZone)
+        {
+            return false;
+        }
+
+        if (IsNearTicket())
+        {
+            return true;
+        }
+
+        if (hasMovementInput || HasMovedRecently())
+        {
+            return true;
+        }
+
+        if (idleTime >= idleThresholdSeconds)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     void Awake()
@@ -27,6 +68,7 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         rb.isKinematic = true;
         rb.useGravity = false;
+        lastFramePosition = transform.position;
     }
 
     void Update()
@@ -36,22 +78,41 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        UpdateOccupancyTracking();
+        DetectNearbyInteractable();
+
         if (minigameLocked)
         {
             return;
         }
 
         HandleMovement();
-        DetectNearbyInteractable();
         HandleInteraction();
     }
 
-    void HandleMovement()
+    void UpdateOccupancyTracking()
+    {
+        hasMovementInput = ReadMovementInput().sqrMagnitude > 0.001f;
+
+        float movedSqr = (transform.position - lastFramePosition).sqrMagnitude;
+        if (movedSqr > 0.0004f || hasMovementInput)
+        {
+            idleTime = 0f;
+        }
+        else
+        {
+            idleTime += Time.deltaTime;
+        }
+
+        lastFramePosition = transform.position;
+    }
+
+    Vector3 ReadMovementInput()
     {
         Keyboard keyboard = Keyboard.current;
         if (keyboard == null)
         {
-            return;
+            return Vector3.zero;
         }
 
         Vector3 input = Vector3.zero;
@@ -71,6 +132,46 @@ public class PlayerController : MonoBehaviour
             if (keyboard.rightArrowKey.isPressed) input.x += 1f;
         }
 
+        return input;
+    }
+
+    bool HasMovedRecently()
+    {
+        return idleTime < 0.15f;
+    }
+
+    bool IsNearTicket()
+    {
+        if (nearbyInteractable is Ticket)
+        {
+            return true;
+        }
+
+        Collider[] hits = Physics.OverlapSphere(
+            transform.position,
+            interactionRadius,
+            ~0,
+            QueryTriggerInteraction.Collide);
+
+        foreach (Collider hit in hits)
+        {
+            if (hit.transform == transform)
+            {
+                continue;
+            }
+
+            if (hit.GetComponentInParent<Ticket>() != null)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void HandleMovement()
+    {
+        Vector3 input = ReadMovementInput();
         if (input.sqrMagnitude > 1f)
         {
             input.Normalize();
