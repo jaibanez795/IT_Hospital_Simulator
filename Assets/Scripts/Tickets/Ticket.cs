@@ -12,6 +12,7 @@ public class Ticket : MonoBehaviour, IInteractable
     readonly List<PlayerController> participatingPlayers = new List<PlayerController>();
     bool isInProgress;
     bool isCompleted;
+    bool expiryPaused;
     float timeLeft;
     bool timerStarted;
 
@@ -29,7 +30,7 @@ public class Ticket : MonoBehaviour, IInteractable
 
     void Update()
     {
-        if (isCompleted || !timerStarted)
+        if (isCompleted || !timerStarted || expiryPaused)
         {
             return;
         }
@@ -49,6 +50,17 @@ public class Ticket : MonoBehaviour, IInteractable
         tiempoLimite = limitSeconds;
         timeLeft = limitSeconds;
         timerStarted = true;
+    }
+
+    public void SetExpiryPaused(bool paused)
+    {
+        expiryPaused = paused;
+    }
+
+    public void ResetInProgress()
+    {
+        isInProgress = false;
+        participatingPlayers.Clear();
     }
 
     public bool CanJoin(PlayerController player)
@@ -113,6 +125,11 @@ public class Ticket : MonoBehaviour, IInteractable
             return;
         }
 
+        if (MinigameManager.Instance != null && MinigameManager.Instance.IsMinigameActive)
+        {
+            return;
+        }
+
         if (!CanJoin(player))
         {
             return;
@@ -120,11 +137,32 @@ public class Ticket : MonoBehaviour, IInteractable
 
         JoinTicket(player);
 
-        if (CanStart())
+        if (!CanStart())
         {
-            StartTicket();
-            CompleteTicket(RollRandomResult());
+            return;
         }
+
+        StartTicket();
+
+        if (!TryStartMinigame(player))
+        {
+            ResolveWithRandomFallback();
+        }
+    }
+
+    bool TryStartMinigame(PlayerController player)
+    {
+        if (MinigameManager.Instance == null)
+        {
+            return false;
+        }
+
+        return MinigameManager.Instance.TryStartMinigame(this, player);
+    }
+
+    void ResolveWithRandomFallback()
+    {
+        CompleteTicket(RollRandomResult());
     }
 
     public void CompleteTicket(TicketResult result)
@@ -138,8 +176,7 @@ public class Ticket : MonoBehaviour, IInteractable
         isInProgress = false;
         ApplyResult(result);
 
-        string typeLabel = ticketType == TicketType.Cable ? "Cable" : "Router";
-        GameManager.Instance?.ShowTemporaryMessage($"Ticket {typeLabel}: {result}");
+        GameManager.Instance?.ShowTemporaryMessage(GetCompletionMessage(result));
 
         Destroy(gameObject);
     }
@@ -159,6 +196,17 @@ public class Ticket : MonoBehaviour, IInteractable
         Destroy(gameObject);
     }
 
+    string GetCompletionMessage(TicketResult result)
+    {
+        if (result == TicketResult.Fallo && ticketType == TicketType.Cable)
+        {
+            return "Fallaste el cableado";
+        }
+
+        string typeLabel = ticketType == TicketType.Cable ? "Cable" : "Router";
+        return $"Ticket {typeLabel}: {result}";
+    }
+
     static TicketResult RollRandomResult()
     {
         int roll = Random.Range(0, 3);
@@ -170,7 +218,7 @@ public class Ticket : MonoBehaviour, IInteractable
         };
     }
 
-    static void ApplyResult(TicketResult result)
+    void ApplyResult(TicketResult result)
     {
         switch (result)
         {
@@ -188,6 +236,10 @@ public class Ticket : MonoBehaviour, IInteractable
                 GameManager.Instance?.AddOperacion(5f);
                 GameManager.Instance?.AddDesempeno(1f);
                 GameManager.Instance?.AddEstres(3f);
+                break;
+            case TicketResult.Fallo:
+                GameManager.Instance?.AddOperacion(-10f);
+                GameManager.Instance?.AddEstres(8f);
                 break;
         }
     }

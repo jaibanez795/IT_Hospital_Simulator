@@ -5,15 +5,22 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] int playerIndex = 1;
-    [SerializeField] float moveSpeed = 18f;
+    [SerializeField] float moveSpeed = 30f;
     [SerializeField] float interactionRadius = 2f;
 
     float sospecha;
+    bool minigameLocked;
     Rigidbody rb;
     IInteractable nearbyInteractable;
 
     public int PlayerIndex => playerIndex;
     public float Sospecha => sospecha;
+    public bool IsMinigameLocked => minigameLocked;
+
+    public void SetMinigameLocked(bool locked)
+    {
+        minigameLocked = locked;
+    }
 
     void Awake()
     {
@@ -25,6 +32,11 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         if (GameManager.Instance != null && !GameManager.Instance.IsPlaying)
+        {
+            return;
+        }
+
+        if (minigameLocked)
         {
             return;
         }

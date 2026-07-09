@@ -86,6 +86,7 @@ public static class PrototypeSceneBuilder
         }
 
         UIManager uiManager = CreateCanvasUI();
+        MinigameSetup.SetupCableMinigame();
 
         EditorSceneManager.SaveScene(scene, ScenePath);
         AddSceneToBuildSettings(ScenePath);
@@ -267,7 +268,7 @@ public static class PrototypeSceneBuilder
         PlayerController controller = player.AddComponent<PlayerController>();
         SerializedObject playerSO = new SerializedObject(controller);
         playerSO.FindProperty("playerIndex").intValue = playerIndex;
-        playerSO.FindProperty("moveSpeed").floatValue = 18f;
+        playerSO.FindProperty("moveSpeed").floatValue = 30f;
         playerSO.ApplyModifiedPropertiesWithoutUndo();
 
         return controller;
