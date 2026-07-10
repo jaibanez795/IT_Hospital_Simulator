@@ -21,7 +21,10 @@ public class Ticket : MonoBehaviour, IInteractable
     bool expiryPaused;
     float timeLeft;
     bool timerStarted;
-    MeshRenderer meshRenderer;
+    Transform cableVisualRoot;
+    Transform routerVisualRoot;
+    readonly List<MeshRenderer> priorityRenderers = new List<MeshRenderer>();
+    Vector3 baseLocalScale = Vector3.one;
 
     public string TicketTitle => ticketTitle;
     public string ZoneName => zoneName;
@@ -39,7 +42,31 @@ public class Ticket : MonoBehaviour, IInteractable
     {
         Collider col = GetComponent<Collider>();
         col.isTrigger = true;
-        meshRenderer = GetComponent<MeshRenderer>();
+        baseLocalScale = transform.localScale;
+        CacheVisualRoots();
+    }
+
+    void CacheVisualRoots()
+    {
+        cableVisualRoot = transform.Find("TicketVisual_Cable");
+        routerVisualRoot = transform.Find("TicketVisual_Router");
+        priorityRenderers.Clear();
+
+        MeshRenderer rootRenderer = GetComponent<MeshRenderer>();
+        if (rootRenderer != null)
+        {
+            priorityRenderers.Add(rootRenderer);
+        }
+
+        if (cableVisualRoot != null)
+        {
+            priorityRenderers.AddRange(cableVisualRoot.GetComponentsInChildren<MeshRenderer>(true));
+        }
+
+        if (routerVisualRoot != null)
+        {
+            priorityRenderers.AddRange(routerVisualRoot.GetComponentsInChildren<MeshRenderer>(true));
+        }
     }
 
     void Update()
@@ -71,6 +98,7 @@ public class Ticket : MonoBehaviour, IInteractable
         timerStarted = true;
 
         ApplyVisualPriority();
+        ApplyTicketTypeVisual();
         NotifySpawned();
     }
 
@@ -89,11 +117,35 @@ public class Ticket : MonoBehaviour, IInteractable
         requesterNpc = null;
 
         ApplyVisualPriority();
+        ApplyTicketTypeVisual();
+    }
+
+    void ApplyTicketTypeVisual()
+    {
+        if (cableVisualRoot == null && routerVisualRoot == null)
+        {
+            CacheVisualRoots();
+        }
+
+        if (cableVisualRoot != null)
+        {
+            cableVisualRoot.gameObject.SetActive(ticketType == TicketType.Cable);
+        }
+
+        if (routerVisualRoot != null)
+        {
+            routerVisualRoot.gameObject.SetActive(ticketType == TicketType.Router);
+        }
     }
 
     void ApplyVisualPriority()
     {
-        if (meshRenderer == null)
+        if (priorityRenderers.Count == 0)
+        {
+            CacheVisualRoots();
+        }
+
+        if (priorityRenderers.Count == 0)
         {
             return;
         }
@@ -107,13 +159,65 @@ public class Ticket : MonoBehaviour, IInteractable
             _ => new Color(1f, 0.9f, 0.2f)
         };
 
+        float scaleMultiplier = 1f;
         if (isCritical)
         {
             color = new Color(1f, 0.15f, 0.15f);
-            transform.localScale = Vector3.one * 1.05f;
+            scaleMultiplier = 1.15f;
+        }
+        else
+        {
+            scaleMultiplier = priority switch
+            {
+                TicketPriority.Low => 0.85f,
+                TicketPriority.Medium => 1f,
+                TicketPriority.High => 1.1f,
+                TicketPriority.Critical => 1.15f,
+                _ => 1f
+            };
         }
 
-        meshRenderer.material.color = color;
+        for (int i = 0; i < priorityRenderers.Count; i++)
+        {
+            MeshRenderer renderer = priorityRenderers[i];
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            if (IsAccentRenderer(renderer))
+            {
+                continue;
+            }
+
+            renderer.material.color = color;
+        }
+
+        transform.localScale = baseLocalScale * scaleMultiplier;
+
+        Transform label = transform.Find("TicketVisual_Cable/PriorityLabel")
+            ?? transform.Find("TicketVisual_Router/PriorityLabel");
+        if (label != null)
+        {
+            TextMesh textMesh = label.GetComponent<TextMesh>();
+            if (textMesh != null)
+            {
+                textMesh.text = isCritical || priority == TicketPriority.Critical
+                    ? "!!"
+                    : priority == TicketPriority.High
+                        ? "!"
+                        : priority == TicketPriority.Low
+                            ? "·"
+                            : "!";
+                textMesh.characterSize = isCritical ? 0.1f : 0.08f;
+            }
+        }
+    }
+
+    static bool IsAccentRenderer(MeshRenderer renderer)
+    {
+        string name = renderer.gameObject.name;
+        return name.StartsWith("Cable") || name == "Led" || name == "Screen";
     }
 
     void NotifySpawned()

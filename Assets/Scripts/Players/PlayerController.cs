@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -22,6 +23,11 @@ public class PlayerController : MonoBehaviour
     PlayerStats stats;
     PlayerController nearbyIncapacitatedPlayer;
     float reviveProgress;
+
+    Transform visualRoot;
+    Transform incapacitatedIndicator;
+    Renderer[] visualRenderers;
+    readonly Dictionary<Renderer, Color> originalRendererColors = new Dictionary<Renderer, Color>();
 
     Renderer playerRenderer;
     Color originalColor;
@@ -106,9 +112,28 @@ public class PlayerController : MonoBehaviour
 
     void CacheVisualDefaults()
     {
-        playerRenderer = GetComponentInChildren<Renderer>();
+        visualRoot = transform.Find("PlayerVisual");
+        incapacitatedIndicator = transform.Find("IncapacitatedIndicator");
         originalScale = transform.localScale;
+        originalRendererColors.Clear();
 
+        if (visualRoot != null)
+        {
+            visualRenderers = visualRoot.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < visualRenderers.Length; i++)
+            {
+                Renderer renderer = visualRenderers[i];
+                if (renderer != null)
+                {
+                    originalRendererColors[renderer] = renderer.material.color;
+                }
+            }
+
+            hasVisualDefaults = visualRenderers.Length > 0;
+            return;
+        }
+
+        playerRenderer = GetComponentInChildren<Renderer>();
         if (playerRenderer != null)
         {
             originalColor = playerRenderer.material.color;
@@ -123,12 +148,30 @@ public class PlayerController : MonoBehaviour
             CacheVisualDefaults();
         }
 
-        if (playerRenderer != null)
+        if (visualRenderers != null && visualRenderers.Length > 0)
         {
-            playerRenderer.material.color = new Color(0.5f, 0.5f, 0.5f, 0.45f);
+            for (int i = 0; i < visualRenderers.Length; i++)
+            {
+                Renderer renderer = visualRenderers[i];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                renderer.material.color = new Color(0.5f, 0.5f, 0.55f, 0.5f);
+            }
+        }
+        else if (playerRenderer != null)
+        {
+            playerRenderer.material.color = new Color(0.5f, 0.5f, 0.55f, 0.5f);
         }
 
-        transform.localScale = originalScale * 0.85f;
+        if (incapacitatedIndicator != null)
+        {
+            incapacitatedIndicator.gameObject.SetActive(true);
+        }
+
+        transform.localScale = originalScale * 0.9f;
     }
 
     void RestoreActiveVisual()
@@ -138,9 +181,30 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        if (playerRenderer != null)
+        if (visualRenderers != null && visualRenderers.Length > 0)
+        {
+            for (int i = 0; i < visualRenderers.Length; i++)
+            {
+                Renderer renderer = visualRenderers[i];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                if (originalRendererColors.TryGetValue(renderer, out Color color))
+                {
+                    renderer.material.color = color;
+                }
+            }
+        }
+        else if (playerRenderer != null)
         {
             playerRenderer.material.color = originalColor;
+        }
+
+        if (incapacitatedIndicator != null)
+        {
+            incapacitatedIndicator.gameObject.SetActive(false);
         }
 
         transform.localScale = originalScale;
