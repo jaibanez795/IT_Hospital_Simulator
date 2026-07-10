@@ -148,6 +148,75 @@ public class NPCManager : MonoBehaviour
         return playerRelationships[playerId][npcId];
     }
 
+    public void SetRelationship(int playerId, string npcId, int value)
+    {
+        if (string.IsNullOrEmpty(npcId))
+        {
+            return;
+        }
+
+        EnsurePlayerRelationships(playerId);
+        playerRelationships[playerId][npcId] = Mathf.Clamp(value, -100, 100);
+        GameManager.Instance?.RefreshUI();
+    }
+
+    public NPCData GetFriendlyTipNpcForPlayer(int playerId, int minimumRelationship)
+    {
+        EnsurePlayerRelationships(playerId);
+
+        for (int i = 0; i < npcs.Count; i++)
+        {
+            NPCData npc = npcs[i];
+            if (npc.Personality != NPCPersonality.Friendly)
+            {
+                continue;
+            }
+
+            if (playerRelationships[playerId][npc.NpcId] >= minimumRelationship)
+            {
+                return npc;
+            }
+        }
+
+        return null;
+    }
+
+    public string GetDirectorVisitTipMessage(NPCData npc, string playerLabel)
+    {
+        if (npc == null)
+        {
+            return string.Empty;
+        }
+
+        if (npc.NpcId == "carlos")
+        {
+            return $"{npc.DisplayName} le avisó a {playerLabel}: Mendoza anda rondando";
+        }
+
+        return $"{npc.DisplayName} le avisó a {playerLabel}: viene el director";
+    }
+
+    [ContextMenu("Debug/Set J1 Paty Friendly Relationship (+25)")]
+    void DebugSetJ1PatyRelationship()
+    {
+        SetRelationship(1, "paty", 25);
+    }
+
+    [ContextMenu("Debug/Set J2 Carlos Friendly Relationship (+25)")]
+    void DebugSetJ2CarlosRelationship()
+    {
+        SetRelationship(2, "carlos", 25);
+    }
+
+    [ContextMenu("Debug/Clear J1 and J2 Friendly Relationships")]
+    void DebugClearFriendlyRelationships()
+    {
+        SetRelationship(1, "paty", 0);
+        SetRelationship(1, "carlos", 0);
+        SetRelationship(2, "paty", 0);
+        SetRelationship(2, "carlos", 0);
+    }
+
     void EnsurePlayerRelationships(int playerId)
     {
         if (!playerRelationships.ContainsKey(playerId))

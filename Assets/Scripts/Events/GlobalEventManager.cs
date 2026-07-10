@@ -1,3 +1,4 @@
+using System.Text;
 using UnityEngine;
 
 public class GlobalEventManager : MonoBehaviour
@@ -11,10 +12,15 @@ public class GlobalEventManager : MonoBehaviour
     [SerializeField] float suspiciousSospecha = 15f;
     [SerializeField] float hideZoneSospecha = 25f;
 
+    [Header("Friendly Tip")]
+    [SerializeField] int friendlyTipThreshold = 25;
+    [SerializeField] float directorVisitWarningSeconds = 5f;
+
     GlobalEventType? activeEvent;
     float nextEventTime;
     float eventEndTime;
     float nextCheckTime;
+    bool friendlyTipsSentForCurrentEvent;
 
     public bool IsDirectorVisitActive => activeEvent == GlobalEventType.DirectorVisit;
 
@@ -47,6 +53,11 @@ public class GlobalEventManager : MonoBehaviour
             Debug.LogWarning("GlobalEventManager: no se encontró UIManager. El banner de eventos no se mostrará.");
         }
 
+        if (NPCManager.Instance == null)
+        {
+            Debug.LogWarning("GlobalEventManager: no se encontró NPCManager. Los pitazos Friendly no funcionarán.");
+        }
+
         PlayerController[] players = FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
         if (players.Length == 0)
         {
@@ -65,9 +76,14 @@ public class GlobalEventManager : MonoBehaviour
             return;
         }
 
-        if (activeEvent == null && Time.time >= nextEventTime)
+        if (activeEvent == null)
         {
-            StartDirectorVisit();
+            TrySendFriendlyDirectorTips();
+
+            if (Time.time >= nextEventTime)
+            {
+                StartDirectorVisit();
+            }
         }
 
         if (activeEvent == GlobalEventType.DirectorVisit)
@@ -84,6 +100,71 @@ public class GlobalEventManager : MonoBehaviour
                 nextCheckTime = Time.time + suspicionCheckInterval;
             }
         }
+    }
+
+    void TrySendFriendlyDirectorTips()
+    {
+        if (friendlyTipsSentForCurrentEvent)
+        {
+            return;
+        }
+
+        float warningTime = nextEventTime - directorVisitWarningSeconds;
+        if (Time.time < warningTime || Time.time >= nextEventTime)
+        {
+            return;
+        }
+
+        SendFriendlyDirectorTips();
+        friendlyTipsSentForCurrentEvent = true;
+    }
+
+    void SendFriendlyDirectorTips()
+    {
+        if (NPCManager.Instance == null)
+        {
+            return;
+        }
+
+        PlayerController[] players = FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+        StringBuilder tipsBuilder = new StringBuilder();
+
+        foreach (PlayerController player in players)
+        {
+            if (player == null || player.Stats == null)
+            {
+                continue;
+            }
+
+            int playerId = player.Stats.PlayerId;
+            NPCData tipNpc = NPCManager.Instance.GetFriendlyTipNpcForPlayer(playerId, friendlyTipThreshold);
+            if (tipNpc == null)
+            {
+                continue;
+            }
+
+            string playerLabel = player.Stats.GetLabel();
+            string tipMessage = NPCManager.Instance.GetDirectorVisitTipMessage(tipNpc, playerLabel);
+            if (string.IsNullOrEmpty(tipMessage))
+            {
+                continue;
+            }
+
+            if (tipsBuilder.Length > 0)
+            {
+                tipsBuilder.AppendLine();
+            }
+
+            tipsBuilder.Append(tipMessage);
+        }
+
+        if (tipsBuilder.Length == 0)
+        {
+            return;
+        }
+
+        float messageDuration = Mathf.Max(directorVisitWarningSeconds + 1f, 6f);
+        GameManager.Instance?.ShowTemporaryMessage($"PITAZO: {tipsBuilder}", messageDuration);
     }
 
     void StartDirectorVisit()
@@ -144,5 +225,13 @@ public class GlobalEventManager : MonoBehaviour
     void ScheduleNextEvent()
     {
         nextEventTime = Time.time + eventInterval;
+        friendlyTipsSentForCurrentEvent = false;
+    }
+
+    [ContextMenu("Debug/Schedule Director Visit In 8s")]
+    void DebugScheduleDirectorVisitSoon()
+    {
+        nextEventTime = Time.time + 8f;
+        friendlyTipsSentForCurrentEvent = false;
     }
 }
