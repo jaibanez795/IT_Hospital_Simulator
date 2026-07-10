@@ -298,9 +298,8 @@ MonoBehaviour:
   desempenoVisible: 30
   actas: 0
   isActive: 1
-  isPromoted: 0
-  isBurnedOut: 0
-  isFired: 0
+  incapacitationReason: 0
+  enableDebugKeys: 0
 --- !u!1 &75257494
 GameObject:
   m_ObjectHideFlags: 0
@@ -3042,9 +3041,8 @@ MonoBehaviour:
   desempenoVisible: 30
   actas: 0
   isActive: 1
-  isPromoted: 0
-  isBurnedOut: 0
-  isFired: 0
+  incapacitationReason: 0
+  enableDebugKeys: 0
 --- !u!1 &1300924754
 GameObject:
   m_ObjectHideFlags: 0
@@ -4416,6 +4414,9 @@ MonoBehaviour:
   suspicionCheckInterval: 3
   suspiciousSospecha: 15
   hideZoneSospecha: 25
+  friendlyTipThreshold: 25
+  directorVisitWarningSeconds: 5
+  enableDebugKeys: 0
 --- !u!1 &1856558398
 GameObject:
   m_ObjectHideFlags: 0

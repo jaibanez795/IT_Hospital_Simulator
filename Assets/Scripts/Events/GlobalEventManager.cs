@@ -1,5 +1,6 @@
 using System.Text;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class GlobalEventManager : MonoBehaviour
 {
@@ -15,6 +16,10 @@ public class GlobalEventManager : MonoBehaviour
     [Header("Friendly Tip")]
     [SerializeField] int friendlyTipThreshold = 25;
     [SerializeField] float directorVisitWarningSeconds = 5f;
+
+    [Header("Debug — activar antes de Play")]
+    [Tooltip("F7=J1+Paty | F8=J2+Carlos | F9=Visita en 8s | F10=Limpiar relaciones Friendly")]
+    [SerializeField] bool enableDebugKeys;
 
     GlobalEventType? activeEvent;
     float nextEventTime;
@@ -71,6 +76,11 @@ public class GlobalEventManager : MonoBehaviour
 
     void Update()
     {
+        if (enableDebugKeys)
+        {
+            HandleDebugKeys();
+        }
+
         if (GameManager.Instance == null || !GameManager.Instance.IsPlaying)
         {
             return;
@@ -228,10 +238,53 @@ public class GlobalEventManager : MonoBehaviour
         friendlyTipsSentForCurrentEvent = false;
     }
 
+    void HandleDebugKeys()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null)
+        {
+            return;
+        }
+
+        if (NPCManager.Instance == null)
+        {
+            return;
+        }
+
+        if (keyboard.f7Key.wasPressedThisFrame)
+        {
+            NPCManager.Instance.SetRelationship(1, "paty", 25);
+            GameManager.Instance?.ShowTemporaryMessage("DEBUG: J1 ahora tiene +25 con Paty");
+        }
+        else if (keyboard.f8Key.wasPressedThisFrame)
+        {
+            NPCManager.Instance.SetRelationship(2, "carlos", 25);
+            GameManager.Instance?.ShowTemporaryMessage("DEBUG: J2 ahora tiene +25 con Carlos");
+        }
+        else if (keyboard.f9Key.wasPressedThisFrame)
+        {
+            ScheduleDirectorVisitIn(8f);
+            GameManager.Instance?.ShowTemporaryMessage("DEBUG: Visita del director en 8s (pitazo en ~3s)");
+        }
+        else if (keyboard.f10Key.wasPressedThisFrame)
+        {
+            NPCManager.Instance.SetRelationship(1, "paty", 0);
+            NPCManager.Instance.SetRelationship(1, "carlos", 0);
+            NPCManager.Instance.SetRelationship(2, "paty", 0);
+            NPCManager.Instance.SetRelationship(2, "carlos", 0);
+            GameManager.Instance?.ShowTemporaryMessage("DEBUG: Relaciones Friendly limpiadas");
+        }
+    }
+
+    public void ScheduleDirectorVisitIn(float secondsFromNow)
+    {
+        nextEventTime = Time.time + Mathf.Max(1f, secondsFromNow);
+        friendlyTipsSentForCurrentEvent = false;
+    }
+
     [ContextMenu("Debug/Schedule Director Visit In 8s")]
     void DebugScheduleDirectorVisitSoon()
     {
-        nextEventTime = Time.time + 8f;
-        friendlyTipsSentForCurrentEvent = false;
+        ScheduleDirectorVisitIn(8f);
     }
 }
