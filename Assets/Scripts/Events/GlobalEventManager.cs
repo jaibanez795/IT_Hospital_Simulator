@@ -94,15 +94,17 @@ public class GlobalEventManager : MonoBehaviour
 
     void EvaluatePlayerDuringVisit(PlayerController player)
     {
-        if (player == null)
+        if (player == null || !player.IsActive)
         {
             return;
         }
 
+        string playerLabel = player.Stats != null ? player.Stats.GetLabel() : $"J{player.PlayerIndex}";
+
         if (player.IsInHideZone)
         {
             player.AddSospecha(hideZoneSospecha);
-            GameManager.Instance?.ShowTemporaryMessage("Te cacharon escondido durante la visita");
+            GameManager.Instance?.ShowTemporaryMessage($"{playerLabel} fue cachado escondido durante la visita");
             return;
         }
 
@@ -112,7 +114,6 @@ public class GlobalEventManager : MonoBehaviour
         }
 
         player.AddSospecha(suspiciousSospecha);
-        string playerLabel = player.PlayerIndex == 1 ? "J1" : "J2";
         GameManager.Instance?.ShowTemporaryMessage($"{playerLabel} se vio sospechoso durante la visita");
     }
 

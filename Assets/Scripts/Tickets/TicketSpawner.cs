@@ -16,6 +16,10 @@ public class TicketSpawner : MonoBehaviour
     [SerializeField] float spawnHeightOffset = 0.6f;
     [SerializeField] float firstSpawnDelay = 2f;
 
+    [Header("Debug")]
+    [SerializeField] bool useDebugNpc;
+    [SerializeField] string debugNpcId = "dr_ramirez";
+
     float nextSpawnTime;
     bool warnedMissingPrefab;
 
@@ -103,7 +107,28 @@ public class TicketSpawner : MonoBehaviour
         Vector3 spawnPosition = spawnPoint.position + Vector3.up * spawnHeightOffset;
 
         Ticket ticket = Instantiate(ticketPrefab, spawnPosition, Quaternion.identity);
-        ticket.Configure(definition, ticketTimeLimit);
+
+        NPCData requester = ResolveRequesterNpc(zoneName, definition.ticketTitle);
+        ticket.Configure(definition, ticketTimeLimit, requester);
         ticket.name = $"Ticket_{definition.priority}_{spawnPoint.name}";
+    }
+
+    NPCData ResolveRequesterNpc(string zoneName, string ticketTitle)
+    {
+        if (NPCManager.Instance == null)
+        {
+            return null;
+        }
+
+        if (useDebugNpc)
+        {
+            NPCData debugNpc = NPCManager.Instance.GetNpcById(debugNpcId);
+            if (debugNpc != null)
+            {
+                return debugNpc;
+            }
+        }
+
+        return NPCManager.Instance.GetNpcForZone(zoneName, ticketTitle);
     }
 }

@@ -12,28 +12,16 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    [Header("Medidores")]
-    [SerializeField] float operacion = 70f;
-    [SerializeField] float estres = 20f;
-    [SerializeField] float desempeno = 30f;
-
-    [Header("Turno")]
-    [SerializeField] float duracionTurno = 180f;
-
-    float timeRemaining;
-    GameState gameState = GameState.Playing;
-    string endReason = string.Empty;
+    [SerializeField] TeamState teamState;
 
     UIManager uiManager;
     Coroutine messageCoroutine;
 
-    public float Operacion => operacion;
-    public float Estres => estres;
-    public float Desempeno => desempeno;
-    public float TimeRemaining => timeRemaining;
-    public GameState State => gameState;
-    public string EndReason => endReason;
-    public bool IsPlaying => gameState == GameState.Playing;
+    public float Operacion => teamState != null ? teamState.Operacion : 0f;
+    public float TimeRemaining => teamState != null ? teamState.TimeRemaining : 0f;
+    public GameState State => teamState != null ? teamState.State : GameState.Playing;
+    public string EndReason => teamState != null ? teamState.EndReason : string.Empty;
+    public bool IsPlaying => teamState != null && teamState.IsPlaying;
 
     void Awake()
     {
@@ -44,7 +32,18 @@ public class GameManager : MonoBehaviour
         }
 
         Instance = this;
-        timeRemaining = duracionTurno;
+
+        if (teamState == null)
+        {
+            teamState = GetComponent<TeamState>();
+        }
+
+        if (teamState == null)
+        {
+            teamState = gameObject.AddComponent<TeamState>();
+        }
+
+        teamState.Initialize();
     }
 
     void Start()
@@ -55,42 +54,83 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        if (gameState != GameState.Playing)
+        if (teamState == null || !teamState.IsPlaying)
         {
             return;
         }
 
-        timeRemaining -= Time.deltaTime;
-        if (timeRemaining <= 0f)
+        teamState.TickTime(Time.deltaTime);
+
+        if (teamState.IsTurnTimeUp())
         {
-            timeRemaining = 0f;
-            Win("Turno sobrevivido");
+            if (teamState.IsOperacionCollapsed())
+            {
+                Lose("Colapso hospitalario");
+            }
+            else if (HasAnyActivePlayer())
+            {
+                Win("Turno sobrevivido");
+            }
+            else
+            {
+                Lose("El equipo de IT desapareció");
+            }
+
             return;
         }
 
-        CheckDefeatConditions();
+        CheckTeamDefeatConditions();
         RefreshUI();
     }
 
     public void AddOperacion(float amount)
     {
-        operacion = Mathf.Clamp(operacion + amount, 0f, 100f);
-        CheckDefeatConditions();
+        if (teamState == null)
+        {
+            return;
+        }
+
+        teamState.AddOperacion(amount);
+        CheckTeamDefeatConditions();
         RefreshUI();
     }
 
-    public void AddEstres(float amount)
+    public void CheckTeamElimination()
     {
-        estres = Mathf.Clamp(estres + amount, 0f, 100f);
-        CheckDefeatConditions();
-        RefreshUI();
+        CheckTeamDefeatConditions();
     }
 
-    public void AddDesempeno(float amount)
+    void CheckTeamDefeatConditions()
     {
-        desempeno = Mathf.Clamp(desempeno + amount, 0f, 100f);
-        CheckDefeatConditions();
-        RefreshUI();
+        if (teamState == null || !teamState.IsPlaying)
+        {
+            return;
+        }
+
+        if (teamState.IsOperacionCollapsed())
+        {
+            Lose("Colapso hospitalario");
+            return;
+        }
+
+        if (!HasAnyActivePlayer())
+        {
+            Lose("El equipo de IT desapareció");
+        }
+    }
+
+    public static bool HasAnyActivePlayer()
+    {
+        PlayerStats[] players = FindObjectsByType<PlayerStats>(FindObjectsSortMode.None);
+        for (int i = 0; i < players.Length; i++)
+        {
+            if (players[i].IsActive)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void ShowTemporaryMessage(string message, float duration = 3f)
@@ -121,59 +161,36 @@ public class GameManager : MonoBehaviour
         messageCoroutine = null;
     }
 
-    void CheckDefeatConditions()
-    {
-        if (gameState != GameState.Playing)
-        {
-            return;
-        }
-
-        if (operacion <= 0f)
-        {
-            Lose("Colapso hospitalario");
-        }
-        else if (estres >= 100f)
-        {
-            Lose("Burnout");
-        }
-        else if (desempeno >= 100f)
-        {
-            Lose("Ascenso forzado");
-        }
-    }
-
     void Win(string reason)
     {
-        if (gameState != GameState.Playing)
+        if (teamState == null || !teamState.IsPlaying)
         {
             return;
         }
 
-        gameState = GameState.Won;
-        endReason = reason;
+        teamState.SetWon(reason);
         ShowEndScreen();
     }
 
     void Lose(string reason)
     {
-        if (gameState != GameState.Playing)
+        if (teamState == null || !teamState.IsPlaying)
         {
             return;
         }
 
-        gameState = GameState.Lost;
-        endReason = reason;
+        teamState.SetLost(reason);
         ShowEndScreen();
     }
 
     void ShowEndScreen()
     {
         RefreshUI();
-        uiManager?.ShowEndScreen(gameState, endReason);
+        uiManager?.ShowEndScreen(teamState.State, teamState.EndReason);
     }
 
-    void RefreshUI()
+    public void RefreshUI()
     {
-        uiManager?.RefreshStats(operacion, estres, desempeno, timeRemaining);
+        uiManager?.RefreshAll();
     }
 }

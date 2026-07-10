@@ -62,7 +62,11 @@ public static class PrototypeSceneBuilder
         GameObject systemsRoot = new GameObject("Systems");
         GameObject gameManagerObject = new GameObject("GameManager");
         gameManagerObject.transform.SetParent(systemsRoot.transform);
-        gameManagerObject.AddComponent<GameManager>();
+        TeamState teamState = gameManagerObject.AddComponent<TeamState>();
+        GameManager gameManager = gameManagerObject.AddComponent<GameManager>();
+        SerializedObject gmSO = new SerializedObject(gameManager);
+        gmSO.FindProperty("teamState").objectReferenceValue = teamState;
+        gmSO.ApplyModifiedPropertiesWithoutUndo();
 
         GameObject spawnerObject = new GameObject("TicketSpawner");
         spawnerObject.transform.SetParent(systemsRoot.transform);
@@ -71,6 +75,10 @@ public static class PrototypeSceneBuilder
         GameObject eventManagerObject = new GameObject("GlobalEventManager");
         eventManagerObject.transform.SetParent(systemsRoot.transform);
         eventManagerObject.AddComponent<GlobalEventManager>();
+
+        GameObject npcManagerObject = new GameObject("NPCManager");
+        npcManagerObject.transform.SetParent(systemsRoot.transform);
+        npcManagerObject.AddComponent<NPCManager>();
 
         Transform[] spawnPoints =
         {
@@ -117,6 +125,7 @@ public static class PrototypeSceneBuilder
         CreateFolder("Assets/Scripts/Zones");
         CreateFolder("Assets/Scripts/UI");
         CreateFolder("Assets/Scripts/Events");
+        CreateFolder("Assets/Scripts/NPCs");
         CreateFolder("Assets/Scripts/Minigames");
         CreateFolder("Assets/Scripts/Editor");
         CreateFolder("Assets/Prefabs");
@@ -276,10 +285,15 @@ public static class PrototypeSceneBuilder
         player.GetComponent<MeshRenderer>().sharedMaterial = material;
 
         PlayerController controller = player.AddComponent<PlayerController>();
+        PlayerStats stats = player.AddComponent<PlayerStats>();
         SerializedObject playerSO = new SerializedObject(controller);
         playerSO.FindProperty("playerIndex").intValue = playerIndex;
         playerSO.FindProperty("moveSpeed").floatValue = 30f;
         playerSO.ApplyModifiedPropertiesWithoutUndo();
+
+        SerializedObject statsSO = new SerializedObject(stats);
+        statsSO.FindProperty("playerId").intValue = playerIndex;
+        statsSO.ApplyModifiedPropertiesWithoutUndo();
 
         WorldLabelsSetup.CreateOrUpdateLabel(
             player.transform,
@@ -308,11 +322,19 @@ public static class PrototypeSceneBuilder
         }
 
         Text operacionText = CreateLabel(canvasObject.transform, "OperacionText", new Vector2(10f, -10f), new Vector2(0f, 1f), font, 18);
-        Text estresText = CreateLabel(canvasObject.transform, "EstresText", new Vector2(10f, -35f), new Vector2(0f, 1f), font, 18);
-        Text desempenoText = CreateLabel(canvasObject.transform, "DesempenoText", new Vector2(10f, -60f), new Vector2(0f, 1f), font, 18);
         Text timerText = CreateLabel(canvasObject.transform, "TimerText", new Vector2(-10f, -10f), new Vector2(1f, 1f), font, 22);
-        Text sospechaJ1Text = CreateLabel(canvasObject.transform, "SospechaJ1Text", new Vector2(10f, -90f), new Vector2(0f, 1f), font, 16);
-        Text sospechaJ2Text = CreateLabel(canvasObject.transform, "SospechaJ2Text", new Vector2(10f, -112f), new Vector2(0f, 1f), font, 16);
+
+        Text j1StatsText = CreateLabel(canvasObject.transform, "J1StatsText", new Vector2(10f, -85f), new Vector2(0f, 1f), font, 14);
+        j1StatsText.alignment = TextAnchor.UpperLeft;
+        j1StatsText.rectTransform.sizeDelta = new Vector2(280f, 70f);
+        j1StatsText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        j1StatsText.verticalOverflow = VerticalWrapMode.Overflow;
+
+        Text j2StatsText = CreateLabel(canvasObject.transform, "J2StatsText", new Vector2(10f, -160f), new Vector2(0f, 1f), font, 14);
+        j2StatsText.alignment = TextAnchor.UpperLeft;
+        j2StatsText.rectTransform.sizeDelta = new Vector2(280f, 70f);
+        j2StatsText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        j2StatsText.verticalOverflow = VerticalWrapMode.Overflow;
         Text temporaryMessageText = CreateLabel(canvasObject.transform, "TemporaryMessageText", new Vector2(0f, -180f), new Vector2(0.5f, 1f), font, 20);
         temporaryMessageText.alignment = TextAnchor.MiddleCenter;
 
@@ -336,6 +358,13 @@ public static class PrototypeSceneBuilder
         ticketQueueText.horizontalOverflow = HorizontalWrapMode.Wrap;
         ticketQueueText.verticalOverflow = VerticalWrapMode.Overflow;
 
+        Text relationshipsText = CreateLabel(canvasObject.transform, "RelationshipsText", new Vector2(10f, -135f), new Vector2(0f, 1f), font, 13);
+        relationshipsText.alignment = TextAnchor.UpperLeft;
+        relationshipsText.text = "Relaciones:";
+        relationshipsText.rectTransform.sizeDelta = new Vector2(220f, 130f);
+        relationshipsText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        relationshipsText.verticalOverflow = VerticalWrapMode.Overflow;
+
         GameObject endPanel = CreatePanel(canvasObject.transform, "EndScreenPanel");
         Text endTitle = CreateLabel(endPanel.transform, "EndTitleText", Vector2.zero, new Vector2(0.5f, 0.5f), font, 36);
         endTitle.rectTransform.anchoredPosition = new Vector2(0f, 40f);
@@ -347,15 +376,14 @@ public static class PrototypeSceneBuilder
 
         SerializedObject uiSO = new SerializedObject(uiManager);
         uiSO.FindProperty("operacionText").objectReferenceValue = operacionText;
-        uiSO.FindProperty("estresText").objectReferenceValue = estresText;
-        uiSO.FindProperty("desempenoText").objectReferenceValue = desempenoText;
         uiSO.FindProperty("timerText").objectReferenceValue = timerText;
-        uiSO.FindProperty("sospechaJ1Text").objectReferenceValue = sospechaJ1Text;
-        uiSO.FindProperty("sospechaJ2Text").objectReferenceValue = sospechaJ2Text;
+        uiSO.FindProperty("j1StatsText").objectReferenceValue = j1StatsText;
+        uiSO.FindProperty("j2StatsText").objectReferenceValue = j2StatsText;
         uiSO.FindProperty("temporaryMessageText").objectReferenceValue = temporaryMessageText;
         uiSO.FindProperty("globalEventBannerText").objectReferenceValue = globalEventBannerText;
         uiSO.FindProperty("ticketQueueTitleText").objectReferenceValue = ticketQueueTitleText;
         uiSO.FindProperty("ticketQueueText").objectReferenceValue = ticketQueueText;
+        uiSO.FindProperty("relationshipsText").objectReferenceValue = relationshipsText;
         uiSO.FindProperty("endScreenPanel").objectReferenceValue = endPanel;
         uiSO.FindProperty("endScreenTitleText").objectReferenceValue = endTitle;
         uiSO.FindProperty("endScreenReasonText").objectReferenceValue = endReason;

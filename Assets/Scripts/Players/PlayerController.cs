@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(PlayerStats))]
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] int playerIndex = 1;
@@ -9,7 +10,6 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float interactionRadius = 2f;
     [SerializeField] float idleThresholdSeconds = 3f;
 
-    float sospecha;
     float idleTime;
     bool minigameLocked;
     bool inHideZone;
@@ -17,11 +17,14 @@ public class PlayerController : MonoBehaviour
     Rigidbody rb;
     Vector3 lastFramePosition;
     IInteractable nearbyInteractable;
+    PlayerStats stats;
 
     public int PlayerIndex => playerIndex;
-    public float Sospecha => sospecha;
+    public PlayerStats Stats => stats;
+    public float Sospecha => stats != null ? stats.Sospecha : 0f;
     public bool IsMinigameLocked => minigameLocked;
     public bool IsInHideZone => inHideZone;
+    public bool IsActive => stats != null && stats.IsActive;
 
     public void SetMinigameLocked(bool locked)
     {
@@ -35,6 +38,11 @@ public class PlayerController : MonoBehaviour
 
     public bool AppearsOccupied()
     {
+        if (!IsActive)
+        {
+            return true;
+        }
+
         if (minigameLocked)
         {
             return true;
@@ -69,11 +77,19 @@ public class PlayerController : MonoBehaviour
         rb.isKinematic = true;
         rb.useGravity = false;
         lastFramePosition = transform.position;
+
+        stats = GetComponent<PlayerStats>();
+        stats.Configure(playerIndex);
     }
 
     void Update()
     {
         if (GameManager.Instance != null && !GameManager.Instance.IsPlaying)
+        {
+            return;
+        }
+
+        if (!IsActive)
         {
             return;
         }
@@ -235,7 +251,7 @@ public class PlayerController : MonoBehaviour
 
     public void AddSospecha(float amount)
     {
-        sospecha = Mathf.Clamp(sospecha + amount, 0f, 100f);
+        stats?.AddSospecha(amount);
     }
 
     void OnDrawGizmosSelected()

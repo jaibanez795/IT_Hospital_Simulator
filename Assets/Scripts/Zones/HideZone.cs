@@ -30,8 +30,21 @@ public class HideZone : MonoBehaviour
             return;
         }
 
-        GameManager.Instance.AddEstres(-estresReductionPerSecond * playersInside.Count * Time.deltaTime);
+        ReduceStressForPlayersInside();
         CheckForCatch();
+    }
+
+    void ReduceStressForPlayersInside()
+    {
+        foreach (PlayerController player in playersInside)
+        {
+            if (player == null || !player.IsActive || player.Stats == null)
+            {
+                continue;
+            }
+
+            player.Stats.AddEstres(-estresReductionPerSecond * Time.deltaTime);
+        }
     }
 
     void CheckForCatch()
@@ -40,6 +53,11 @@ public class HideZone : MonoBehaviour
 
         foreach (PlayerController player in players)
         {
+            if (player == null || !player.IsActive)
+            {
+                continue;
+            }
+
             if (!catchTimers.ContainsKey(player))
             {
                 catchTimers[player] = 0f;
@@ -57,7 +75,8 @@ public class HideZone : MonoBehaviour
             if (Random.value <= catchChance)
             {
                 player.AddSospecha(sospechaOnCatch);
-                GameManager.Instance.ShowTemporaryMessage("Te cacharon descansando en el site");
+                string label = player.Stats != null ? player.Stats.GetLabel() : "J?";
+                GameManager.Instance.ShowTemporaryMessage($"{label} fue cachado descansando en el site");
             }
         }
     }
@@ -65,7 +84,7 @@ public class HideZone : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         PlayerController player = other.GetComponent<PlayerController>();
-        if (player == null)
+        if (player == null || !player.IsActive)
         {
             return;
         }

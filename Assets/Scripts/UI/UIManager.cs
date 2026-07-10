@@ -4,17 +4,20 @@ using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
-    [Header("Stats")]
+    [Header("Global")]
     [SerializeField] Text operacionText;
-    [SerializeField] Text estresText;
-    [SerializeField] Text desempenoText;
     [SerializeField] Text timerText;
-    [SerializeField] Text sospechaJ1Text;
-    [SerializeField] Text sospechaJ2Text;
+
+    [Header("Players")]
+    [SerializeField] Text j1StatsText;
+    [SerializeField] Text j2StatsText;
 
     [Header("Ticket Queue")]
     [SerializeField] Text ticketQueueTitleText;
     [SerializeField] Text ticketQueueText;
+
+    [Header("Relationships")]
+    [SerializeField] Text relationshipsText;
 
     [Header("Messages")]
     [SerializeField] Text temporaryMessageText;
@@ -22,6 +25,12 @@ public class UIManager : MonoBehaviour
     [SerializeField] GameObject endScreenPanel;
     [SerializeField] Text endScreenTitleText;
     [SerializeField] Text endScreenReasonText;
+
+    [Header("Legacy Fields (optional fallback)")]
+    [SerializeField] Text estresText;
+    [SerializeField] Text desempenoText;
+    [SerializeField] Text sospechaJ1Text;
+    [SerializeField] Text sospechaJ2Text;
 
     PlayerController player1;
     PlayerController player2;
@@ -48,7 +57,7 @@ public class UIManager : MonoBehaviour
 
         ClearTemporaryMessage();
         SetText(ticketQueueTitleText, "COLA DE TICKETS");
-        RefreshTicketQueue();
+        RefreshAll();
     }
 
     void Update()
@@ -58,28 +67,59 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        RefreshStats(
-            GameManager.Instance.Operacion,
-            GameManager.Instance.Estres,
-            GameManager.Instance.Desempeno,
-            GameManager.Instance.TimeRemaining);
-
-        RefreshSospecha();
-        RefreshTicketQueue();
+        RefreshAll();
     }
 
-    public void RefreshStats(float operacion, float estres, float desempeno, float timeRemaining)
+    public void RefreshAll()
+    {
+        if (GameManager.Instance == null)
+        {
+            return;
+        }
+
+        RefreshGlobalStats(GameManager.Instance.Operacion, GameManager.Instance.TimeRemaining);
+        RefreshPlayerPanels();
+        RefreshTicketQueue();
+        RefreshRelationships();
+    }
+
+    public void RefreshGlobalStats(float operacion, float timeRemaining)
     {
         SetText(operacionText, $"Operación: {operacion:0}");
-        SetText(estresText, $"Estrés: {estres:0}");
-        SetText(desempenoText, $"Desempeño: {desempeno:0}");
         SetText(timerText, $"Tiempo: {Mathf.CeilToInt(timeRemaining)}s");
     }
 
-    void RefreshSospecha()
+    void RefreshPlayerPanels()
     {
-        SetText(sospechaJ1Text, $"Sospecha J1: {(player1 != null ? player1.Sospecha : 0f):0}");
-        SetText(sospechaJ2Text, $"Sospecha J2: {(player2 != null ? player2.Sospecha : 0f):0}");
+        RefreshPlayerPanel(player1, j1StatsText, estresText, sospechaJ1Text);
+        RefreshPlayerPanel(player2, j2StatsText, desempenoText, sospechaJ2Text);
+    }
+
+    static void RefreshPlayerPanel(PlayerController player, Text primaryText, Text legacyEstresText, Text legacySospechaText)
+    {
+        if (player == null || player.Stats == null)
+        {
+            SetText(primaryText, string.Empty);
+            return;
+        }
+
+        PlayerStats stats = player.Stats;
+        string panelText =
+            $"{stats.GetLabel()} [{stats.GetStatusLabel()}]\n" +
+            $"Estrés: {stats.Estres:0}  Sospecha: {stats.Sospecha:0}\n" +
+            $"Desempeño: {stats.DesempenoVisible:0}  Actas: {stats.Actas}";
+
+        SetText(primaryText, panelText);
+
+        if (legacyEstresText != null && primaryText != legacyEstresText)
+        {
+            SetText(legacyEstresText, string.Empty);
+        }
+
+        if (legacySospechaText != null && primaryText != legacySospechaText)
+        {
+            SetText(legacySospechaText, string.Empty);
+        }
     }
 
     public void RefreshTicketQueue()
@@ -106,6 +146,22 @@ public class UIManager : MonoBehaviour
         }
 
         SetText(ticketQueueText, builder.ToString().TrimEnd());
+    }
+
+    public void RefreshRelationships()
+    {
+        if (relationshipsText == null)
+        {
+            return;
+        }
+
+        if (NPCManager.Instance == null)
+        {
+            SetText(relationshipsText, "Relaciones:\n(sin NPCManager)");
+            return;
+        }
+
+        SetText(relationshipsText, NPCManager.Instance.GetAllRelationshipsSummary());
     }
 
     static int CompareTicketsForQueue(Ticket a, Ticket b)
@@ -161,14 +217,7 @@ public class UIManager : MonoBehaviour
         string title = state == GameState.Won ? "VICTORIA" : "DERROTA";
         SetText(endScreenTitleText, title);
         SetText(endScreenReasonText, reason);
-
-        RefreshStats(
-            GameManager.Instance.Operacion,
-            GameManager.Instance.Estres,
-            GameManager.Instance.Desempeno,
-            GameManager.Instance.TimeRemaining);
-        RefreshSospecha();
-        RefreshTicketQueue();
+        RefreshAll();
     }
 
     static void SetText(Text label, string value)
