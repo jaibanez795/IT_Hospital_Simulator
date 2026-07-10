@@ -59,7 +59,7 @@ public class CableMinigame : MinigameBase
         correctCableIndex = Random.Range(0, 3);
 
         SetText(titleText, "Seguir cable");
-        SetText(instructionText, "Elige: teclas 1/2/3 o A/B/C, o click en botones");
+        SetText(instructionText, "Elige: teclas 1/2/3 o click en botones");
         SetText(feedbackText, string.Empty);
         UpdateTimerDisplay();
 
@@ -106,15 +106,15 @@ public class CableMinigame : MinigameBase
             return;
         }
 
-        if (keyboard.digit1Key.wasPressedThisFrame || keyboard.numpad1Key.wasPressedThisFrame || keyboard.aKey.wasPressedThisFrame)
+        if (keyboard.digit1Key.wasPressedThisFrame || keyboard.numpad1Key.wasPressedThisFrame)
         {
             OnCableSelected(0);
         }
-        else if (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame || keyboard.bKey.wasPressedThisFrame)
+        else if (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame)
         {
             OnCableSelected(1);
         }
-        else if (keyboard.digit3Key.wasPressedThisFrame || keyboard.numpad3Key.wasPressedThisFrame || keyboard.cKey.wasPressedThisFrame)
+        else if (keyboard.digit3Key.wasPressedThisFrame || keyboard.numpad3Key.wasPressedThisFrame)
         {
             OnCableSelected(2);
         }

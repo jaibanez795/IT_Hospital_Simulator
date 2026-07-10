@@ -49,7 +49,21 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         uiManager = FindFirstObjectByType<UIManager>();
+        ValidateReferences();
         RefreshUI();
+    }
+
+    void ValidateReferences()
+    {
+        if (teamState == null)
+        {
+            Debug.LogError("GameManager: TeamState no está disponible. El juego no puede iniciar correctamente.");
+        }
+
+        if (uiManager == null)
+        {
+            Debug.LogError("GameManager: No se encontró UIManager en la escena. Ejecuta IT Hospital → Build Prototype 01 Scene o asigna UIManager.");
+        }
     }
 
     void Update()

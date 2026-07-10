@@ -31,7 +31,31 @@ public class GlobalEventManager : MonoBehaviour
 
     void Start()
     {
+        ValidateReferences();
         ScheduleNextEvent();
+    }
+
+    void ValidateReferences()
+    {
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning("GlobalEventManager: no se encontró GameManager. Los eventos globales no se evaluarán.");
+        }
+
+        if (FindFirstObjectByType<UIManager>() == null)
+        {
+            Debug.LogWarning("GlobalEventManager: no se encontró UIManager. El banner de eventos no se mostrará.");
+        }
+
+        PlayerController[] players = FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+        if (players.Length == 0)
+        {
+            Debug.LogWarning("GlobalEventManager: no hay jugadores en la escena. DirectorVisit no podrá penalizar sospecha.");
+        }
+        else if (players.Length < 2)
+        {
+            Debug.LogWarning("GlobalEventManager: se encontró menos de 2 jugadores. El prototipo local co-op espera J1 y J2.");
+        }
     }
 
     void Update()

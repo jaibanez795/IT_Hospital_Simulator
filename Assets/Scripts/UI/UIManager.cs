@@ -57,7 +57,71 @@ public class UIManager : MonoBehaviour
 
         ClearTemporaryMessage();
         SetText(ticketQueueTitleText, "COLA DE TICKETS");
+        ValidateReferences();
         RefreshAll();
+    }
+
+    void ValidateReferences()
+    {
+        if (operacionText == null)
+        {
+            Debug.LogWarning("UIManager: falta operacionText. Las métricas globales no se mostrarán.");
+        }
+
+        if (timerText == null)
+        {
+            Debug.LogWarning("UIManager: falta timerText. El temporizador no se mostrará.");
+        }
+
+        if (j1StatsText == null)
+        {
+            Debug.LogWarning("UIManager: falta j1StatsText. Las stats de J1 no se mostrarán.");
+        }
+
+        if (j2StatsText == null)
+        {
+            Debug.LogWarning("UIManager: falta j2StatsText. Las stats de J2 no se mostrarán.");
+        }
+
+        if (ticketQueueText == null)
+        {
+            Debug.LogWarning("UIManager: falta ticketQueueText. La cola de tickets no se mostrará.");
+        }
+
+        if (relationshipsText == null)
+        {
+            Debug.LogWarning("UIManager: falta relationshipsText. Las relaciones NPC no se mostrarán.");
+        }
+
+        if (temporaryMessageText == null)
+        {
+            Debug.LogWarning("UIManager: falta temporaryMessageText. Los mensajes temporales no se mostrarán.");
+        }
+
+        if (globalEventBannerText == null)
+        {
+            Debug.LogWarning("UIManager: falta globalEventBannerText. El banner de eventos globales no se mostrará.");
+        }
+
+        if (endScreenPanel == null)
+        {
+            Debug.LogWarning("UIManager: falta endScreenPanel. La pantalla final no se mostrará.");
+        }
+
+        if (endScreenTitleText == null || endScreenReasonText == null)
+        {
+            Debug.LogWarning("UIManager: faltan textos de pantalla final (endScreenTitleText o endScreenReasonText).");
+        }
+
+        if (player1 == null)
+        {
+            Debug.LogWarning("UIManager: no se encontró Player1 (PlayerIndex=1) en la escena.");
+        }
+
+        if (player2 == null)
+        {
+            Debug.LogWarning("UIManager: no se encontró Player2 (PlayerIndex=2) en la escena.");
+        }
     }
 
     void Update()

@@ -15,7 +15,31 @@ public class HideZone : MonoBehaviour
     void Awake()
     {
         Collider col = GetComponent<Collider>();
+        if (col == null)
+        {
+            Debug.LogError("HideZone: requiere un Collider. La zona de descanso no funcionará.");
+            return;
+        }
+
         col.isTrigger = true;
+
+        if (!col.enabled)
+        {
+            Debug.LogWarning("HideZone: el Collider está deshabilitado. Los jugadores no podrán entrar.");
+        }
+    }
+
+    void Start()
+    {
+        ValidateReferences();
+    }
+
+    void ValidateReferences()
+    {
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning("HideZone: no se encontró GameManager. La reducción de estrés no se aplicará.");
+        }
     }
 
     void Update()

@@ -21,7 +21,6 @@ public class TicketSpawner : MonoBehaviour
     [SerializeField] string debugNpcId = "dr_ramirez";
 
     float nextSpawnTime;
-    bool warnedMissingPrefab;
 
     void Awake()
     {
@@ -30,7 +29,35 @@ public class TicketSpawner : MonoBehaviour
 
     void Start()
     {
+        ValidateReferences();
         nextSpawnTime = Time.time + firstSpawnDelay;
+    }
+
+    void ValidateReferences()
+    {
+        if (ticketPrefab == null)
+        {
+            Debug.LogError("TicketSpawner: falta Ticket Prefab. Arrastra Assets/Prefabs/Ticket.prefab al campo Ticket Prefab.");
+        }
+
+        if (spawnPoints == null || spawnPoints.Length == 0)
+        {
+            Debug.LogError("TicketSpawner: no hay Spawn Points asignados. Los tickets no pueden aparecer.");
+            return;
+        }
+
+        for (int i = 0; i < spawnPoints.Length; i++)
+        {
+            if (spawnPoints[i] == null)
+            {
+                Debug.LogWarning($"TicketSpawner: spawnPoints[{i}] es null. Ese punto será ignorado al spawnear.");
+            }
+        }
+
+        if (NPCManager.Instance == null)
+        {
+            Debug.LogWarning("TicketSpawner: no se encontró NPCManager. Los tickets aparecerán sin requester NPC.");
+        }
     }
 
     void Update()
@@ -40,25 +67,8 @@ public class TicketSpawner : MonoBehaviour
             return;
         }
 
-        if (ticketPrefab == null)
+        if (ticketPrefab == null || spawnPoints == null || spawnPoints.Length == 0)
         {
-            if (!warnedMissingPrefab)
-            {
-                Debug.LogWarning("TicketSpawner: falta el Ticket Prefab. Arrastra Assets/Prefabs/Ticket.prefab al campo Ticket Prefab.");
-                warnedMissingPrefab = true;
-            }
-
-            return;
-        }
-
-        if (spawnPoints == null || spawnPoints.Length == 0)
-        {
-            if (!warnedMissingPrefab)
-            {
-                Debug.LogWarning("TicketSpawner: no hay Spawn Points asignados.");
-                warnedMissingPrefab = true;
-            }
-
             return;
         }
 

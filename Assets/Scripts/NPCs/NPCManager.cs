@@ -21,6 +21,15 @@ public class NPCManager : MonoBehaviour
 
         Instance = this;
         InitializeDefaultNpcs();
+        ValidateReferences();
+    }
+
+    void ValidateReferences()
+    {
+        if (npcs.Count == 0)
+        {
+            Debug.LogWarning("NPCManager: no se inicializaron NPCs. Los tickets no tendrán requesters válidos.");
+        }
     }
 
     void InitializeDefaultNpcs()

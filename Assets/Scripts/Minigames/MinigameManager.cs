@@ -32,6 +32,26 @@ public class MinigameManager : MonoBehaviour
         {
             routerMinigame.Initialize(this);
         }
+
+        ValidateReferences();
+    }
+
+    void ValidateReferences()
+    {
+        if (cableMinigame == null)
+        {
+            Debug.LogWarning("MinigameManager: CableMinigame no asignado. Los tickets Cable usarán fallback aleatorio.");
+        }
+
+        if (routerMinigame == null)
+        {
+            Debug.LogWarning("MinigameManager: RouterMinigame no asignado. Los tickets Router usarán fallback aleatorio.");
+        }
+
+        if (cableMinigame == null && routerMinigame == null)
+        {
+            Debug.LogError("MinigameManager: no hay minijuegos asignados. Todos los tickets usarán fallback aleatorio.");
+        }
     }
 
     public bool TryStartMinigame(Ticket ticket, PlayerController player)
