@@ -12,7 +12,7 @@ public class TicketSpawner : MonoBehaviour
     [SerializeField] float minSpawnInterval = 8f;
     [SerializeField] float maxSpawnInterval = 14f;
     [SerializeField] float ticketTimeLimit = 30f;
-    [SerializeField] int maxActiveTickets = 4;
+    [SerializeField] int maxActiveTickets = 5;
     [SerializeField] float spawnHeightOffset = 0.6f;
     [SerializeField] float firstSpawnDelay = 2f;
 
@@ -98,11 +98,12 @@ public class TicketSpawner : MonoBehaviour
     void SpawnTicket()
     {
         Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
+        string zoneName = TicketDefinitionLibrary.GetZoneNameFromSpawnPoint(spawnPoint);
+        TicketSpawnData definition = TicketDefinitionLibrary.GetRandomForZone(zoneName);
         Vector3 spawnPosition = spawnPoint.position + Vector3.up * spawnHeightOffset;
-        TicketType type = Random.value > 0.5f ? TicketType.Cable : TicketType.Router;
 
         Ticket ticket = Instantiate(ticketPrefab, spawnPosition, Quaternion.identity);
-        ticket.Configure(type, TicketMode.Solo, 1, ticketTimeLimit);
-        ticket.name = $"Ticket_{type}_{spawnPoint.name}";
+        ticket.Configure(definition, ticketTimeLimit);
+        ticket.name = $"Ticket_{definition.priority}_{spawnPoint.name}";
     }
 }

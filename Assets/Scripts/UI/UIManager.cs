@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,6 +11,10 @@ public class UIManager : MonoBehaviour
     [SerializeField] Text timerText;
     [SerializeField] Text sospechaJ1Text;
     [SerializeField] Text sospechaJ2Text;
+
+    [Header("Ticket Queue")]
+    [SerializeField] Text ticketQueueTitleText;
+    [SerializeField] Text ticketQueueText;
 
     [Header("Messages")]
     [SerializeField] Text temporaryMessageText;
@@ -42,6 +47,8 @@ public class UIManager : MonoBehaviour
         }
 
         ClearTemporaryMessage();
+        SetText(ticketQueueTitleText, "COLA DE TICKETS");
+        RefreshTicketQueue();
     }
 
     void Update()
@@ -58,6 +65,7 @@ public class UIManager : MonoBehaviour
             GameManager.Instance.TimeRemaining);
 
         RefreshSospecha();
+        RefreshTicketQueue();
     }
 
     public void RefreshStats(float operacion, float estres, float desempeno, float timeRemaining)
@@ -72,6 +80,55 @@ public class UIManager : MonoBehaviour
     {
         SetText(sospechaJ1Text, $"Sospecha J1: {(player1 != null ? player1.Sospecha : 0f):0}");
         SetText(sospechaJ2Text, $"Sospecha J2: {(player2 != null ? player2.Sospecha : 0f):0}");
+    }
+
+    public void RefreshTicketQueue()
+    {
+        if (ticketQueueText == null)
+        {
+            return;
+        }
+
+        Ticket[] tickets = FindObjectsByType<Ticket>(FindObjectsSortMode.None);
+        if (tickets.Length == 0)
+        {
+            SetText(ticketQueueText, "(sin tickets activos)");
+            return;
+        }
+
+        List<Ticket> sortedTickets = new List<Ticket>(tickets);
+        sortedTickets.Sort(CompareTicketsForQueue);
+
+        System.Text.StringBuilder builder = new System.Text.StringBuilder();
+        for (int i = 0; i < sortedTickets.Count; i++)
+        {
+            builder.AppendLine(sortedTickets[i].GetQueueLine());
+        }
+
+        SetText(ticketQueueText, builder.ToString().TrimEnd());
+    }
+
+    static int CompareTicketsForQueue(Ticket a, Ticket b)
+    {
+        int priorityCompare = GetPrioritySortValue(b.Priority).CompareTo(GetPrioritySortValue(a.Priority));
+        if (priorityCompare != 0)
+        {
+            return priorityCompare;
+        }
+
+        return a.TimeLeft.CompareTo(b.TimeLeft);
+    }
+
+    static int GetPrioritySortValue(TicketPriority priority)
+    {
+        return priority switch
+        {
+            TicketPriority.Critical => 4,
+            TicketPriority.High => 3,
+            TicketPriority.Medium => 2,
+            TicketPriority.Low => 1,
+            _ => 0
+        };
     }
 
     public void SetTemporaryMessage(string message)
@@ -111,6 +168,7 @@ public class UIManager : MonoBehaviour
             GameManager.Instance.Desempeno,
             GameManager.Instance.TimeRemaining);
         RefreshSospecha();
+        RefreshTicketQueue();
     }
 
     static void SetText(Text label, string value)

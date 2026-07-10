@@ -4,6 +4,10 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class Ticket : MonoBehaviour, IInteractable
 {
+    [SerializeField] string ticketTitle = "Ticket sin título";
+    [SerializeField] string zoneName = "Desconocida";
+    [SerializeField] TicketPriority priority = TicketPriority.Medium;
+    [SerializeField] bool isCritical;
     [SerializeField] TicketType ticketType = TicketType.Cable;
     [SerializeField] TicketMode ticketMode = TicketMode.Solo;
     [SerializeField] int requiredPlayers = 1;
@@ -15,7 +19,13 @@ public class Ticket : MonoBehaviour, IInteractable
     bool expiryPaused;
     float timeLeft;
     bool timerStarted;
+    MeshRenderer meshRenderer;
 
+    public string TicketTitle => ticketTitle;
+    public string ZoneName => zoneName;
+    public TicketPriority Priority => priority;
+    public bool IsCritical => isCritical;
+    public float TimeLeft => timeLeft;
     public TicketType TicketType => ticketType;
     public TicketMode TicketMode => ticketMode;
     public int RequiredPlayers => requiredPlayers;
@@ -26,6 +36,7 @@ public class Ticket : MonoBehaviour, IInteractable
     {
         Collider col = GetComponent<Collider>();
         col.isTrigger = true;
+        meshRenderer = GetComponent<MeshRenderer>();
     }
 
     void Update()
@@ -42,6 +53,23 @@ public class Ticket : MonoBehaviour, IInteractable
         }
     }
 
+    public void Configure(TicketSpawnData data, float limitSeconds)
+    {
+        ticketTitle = data.ticketTitle;
+        zoneName = data.zoneName;
+        priority = data.priority;
+        isCritical = data.isCritical;
+        ticketType = data.ticketType;
+        ticketMode = data.ticketMode;
+        requiredPlayers = data.requiredPlayers;
+        tiempoLimite = limitSeconds;
+        timeLeft = limitSeconds;
+        timerStarted = true;
+
+        ApplyVisualPriority();
+        NotifySpawned();
+    }
+
     public void Configure(TicketType type, TicketMode mode, int playersRequired, float limitSeconds)
     {
         ticketType = type;
@@ -50,6 +78,45 @@ public class Ticket : MonoBehaviour, IInteractable
         tiempoLimite = limitSeconds;
         timeLeft = limitSeconds;
         timerStarted = true;
+        ticketTitle = type == TicketType.Cable ? "Ticket de cable" : "Ticket de router";
+        zoneName = "Desconocida";
+        priority = TicketPriority.Medium;
+        isCritical = false;
+
+        ApplyVisualPriority();
+    }
+
+    void ApplyVisualPriority()
+    {
+        if (meshRenderer == null)
+        {
+            return;
+        }
+
+        Color color = priority switch
+        {
+            TicketPriority.Low => new Color(0.85f, 0.85f, 0.35f),
+            TicketPriority.Medium => new Color(1f, 0.9f, 0.2f),
+            TicketPriority.High => new Color(1f, 0.55f, 0.15f),
+            TicketPriority.Critical => new Color(1f, 0.2f, 0.2f),
+            _ => new Color(1f, 0.9f, 0.2f)
+        };
+
+        if (isCritical)
+        {
+            color = new Color(1f, 0.15f, 0.15f);
+            transform.localScale = Vector3.one * 1.05f;
+        }
+
+        meshRenderer.material.color = color;
+    }
+
+    void NotifySpawned()
+    {
+        if (isCritical)
+        {
+            GameManager.Instance?.ShowTemporaryMessage($"Nuevo ticket crítico: {ticketTitle}");
+        }
     }
 
     public void SetExpiryPaused(bool paused)
@@ -176,9 +243,25 @@ public class Ticket : MonoBehaviour, IInteractable
         isInProgress = false;
         ApplyResult(result);
 
-        GameManager.Instance?.ShowTemporaryMessage(customMessage ?? GetCompletionMessage(result));
+        string message = ResolveCompletionMessage(result, customMessage);
+        GameManager.Instance?.ShowTemporaryMessage(message);
 
         Destroy(gameObject);
+    }
+
+    string ResolveCompletionMessage(TicketResult result, string customMessage)
+    {
+        if (!string.IsNullOrEmpty(customMessage))
+        {
+            return customMessage;
+        }
+
+        if (isCritical && result != TicketResult.Fallo)
+        {
+            return "Ticket crítico resuelto";
+        }
+
+        return GetCompletionMessage(result);
     }
 
     public void ExpireTicket()
@@ -190,10 +273,36 @@ public class Ticket : MonoBehaviour, IInteractable
 
         isCompleted = true;
         isInProgress = false;
-        GameManager.Instance?.AddOperacion(-15f);
-        GameManager.Instance?.ShowTemporaryMessage("Ticket expirado: -15 Operación");
+        ApplyExpireEffects();
+
+        string message = isCritical || priority == TicketPriority.Critical
+            ? $"Ticket crítico expiró: {ticketTitle}"
+            : $"Ticket expirado: {ticketTitle}";
+
+        GameManager.Instance?.ShowTemporaryMessage(message);
 
         Destroy(gameObject);
+    }
+
+    void ApplyExpireEffects()
+    {
+        switch (priority)
+        {
+            case TicketPriority.Low:
+                GameManager.Instance?.AddOperacion(-5f);
+                break;
+            case TicketPriority.Medium:
+                GameManager.Instance?.AddOperacion(-10f);
+                break;
+            case TicketPriority.High:
+                GameManager.Instance?.AddOperacion(-18f);
+                GameManager.Instance?.AddEstres(5f);
+                break;
+            case TicketPriority.Critical:
+                GameManager.Instance?.AddOperacion(-25f);
+                GameManager.Instance?.AddEstres(10f);
+                break;
+        }
     }
 
     string GetCompletionMessage(TicketResult result)
@@ -203,8 +312,26 @@ public class Ticket : MonoBehaviour, IInteractable
             return "Fallaste el cableado";
         }
 
-        string typeLabel = ticketType == TicketType.Cable ? "Cable" : "Router";
-        return $"Ticket {typeLabel}: {result}";
+        return $"[{GetPriorityLabel()}] {ticketTitle}: {result}";
+    }
+
+    public string GetQueueLine()
+    {
+        int secondsLeft = Mathf.CeilToInt(Mathf.Max(0f, timeLeft));
+        string prefix = isCritical ? "[CRIT]" : $"[{GetPriorityLabel()}]";
+        return $"{prefix} {ticketTitle} — {zoneName} — {secondsLeft}s";
+    }
+
+    public string GetPriorityLabel()
+    {
+        return priority switch
+        {
+            TicketPriority.Low => "LOW",
+            TicketPriority.Medium => "MED",
+            TicketPriority.High => "HIGH",
+            TicketPriority.Critical => "CRIT",
+            _ => priority.ToString().ToUpper()
+        };
     }
 
     static TicketResult RollRandomResult()

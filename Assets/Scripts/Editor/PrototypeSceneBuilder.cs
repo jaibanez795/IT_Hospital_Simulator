@@ -323,6 +323,19 @@ public static class PrototypeSceneBuilder
         globalEventBannerText.text = string.Empty;
         globalEventBannerText.raycastTarget = false;
 
+        Text ticketQueueTitleText = CreateLabel(canvasObject.transform, "TicketQueueTitleText", new Vector2(-10f, -145f), new Vector2(1f, 1f), font, 16);
+        ticketQueueTitleText.alignment = TextAnchor.UpperRight;
+        ticketQueueTitleText.fontStyle = FontStyle.Bold;
+        ticketQueueTitleText.text = "COLA DE TICKETS";
+        ticketQueueTitleText.rectTransform.sizeDelta = new Vector2(360f, 24f);
+
+        Text ticketQueueText = CreateLabel(canvasObject.transform, "TicketQueueText", new Vector2(-10f, -170f), new Vector2(1f, 1f), font, 13);
+        ticketQueueText.alignment = TextAnchor.UpperRight;
+        ticketQueueText.text = "(sin tickets activos)";
+        ticketQueueText.rectTransform.sizeDelta = new Vector2(360f, 180f);
+        ticketQueueText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        ticketQueueText.verticalOverflow = VerticalWrapMode.Overflow;
+
         GameObject endPanel = CreatePanel(canvasObject.transform, "EndScreenPanel");
         Text endTitle = CreateLabel(endPanel.transform, "EndTitleText", Vector2.zero, new Vector2(0.5f, 0.5f), font, 36);
         endTitle.rectTransform.anchoredPosition = new Vector2(0f, 40f);
@@ -341,6 +354,8 @@ public static class PrototypeSceneBuilder
         uiSO.FindProperty("sospechaJ2Text").objectReferenceValue = sospechaJ2Text;
         uiSO.FindProperty("temporaryMessageText").objectReferenceValue = temporaryMessageText;
         uiSO.FindProperty("globalEventBannerText").objectReferenceValue = globalEventBannerText;
+        uiSO.FindProperty("ticketQueueTitleText").objectReferenceValue = ticketQueueTitleText;
+        uiSO.FindProperty("ticketQueueText").objectReferenceValue = ticketQueueText;
         uiSO.FindProperty("endScreenPanel").objectReferenceValue = endPanel;
         uiSO.FindProperty("endScreenTitleText").objectReferenceValue = endTitle;
         uiSO.FindProperty("endScreenReasonText").objectReferenceValue = endReason;
