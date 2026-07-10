@@ -145,6 +145,28 @@ public class UIManager : MonoBehaviour
         RefreshPlayerPanels();
         RefreshTicketQueue();
         RefreshRelationships();
+        RefreshStatusMessages();
+    }
+
+    void RefreshStatusMessages()
+    {
+        if (GameManager.Instance == null)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(GameManager.Instance.ReviveProgressMessage))
+        {
+            SetText(temporaryMessageText, GameManager.Instance.ReviveProgressMessage);
+            return;
+        }
+
+        if (GameManager.Instance.IsAllDownGraceActive)
+        {
+            SetText(
+                temporaryMessageText,
+                $"¡Equipo caído! Revive en: {Mathf.CeilToInt(GameManager.Instance.AllDownGraceRemaining)}s");
+        }
     }
 
     public void RefreshGlobalStats(float operacion, float timeRemaining)

@@ -16,12 +16,19 @@ public class GameManager : MonoBehaviour
 
     UIManager uiManager;
     Coroutine messageCoroutine;
+    float allDownGraceRemaining = -1f;
+    string reviveProgressMessage;
+
+    const float AllDownGraceDuration = 10f;
 
     public float Operacion => teamState != null ? teamState.Operacion : 0f;
     public float TimeRemaining => teamState != null ? teamState.TimeRemaining : 0f;
     public GameState State => teamState != null ? teamState.State : GameState.Playing;
     public string EndReason => teamState != null ? teamState.EndReason : string.Empty;
     public bool IsPlaying => teamState != null && teamState.IsPlaying;
+    public float AllDownGraceRemaining => allDownGraceRemaining;
+    public bool IsAllDownGraceActive => allDownGraceRemaining >= 0f;
+    public string ReviveProgressMessage => reviveProgressMessage;
 
     void Awake()
     {
@@ -94,6 +101,41 @@ public class GameManager : MonoBehaviour
         }
 
         CheckTeamDefeatConditions();
+        TickAllDownGraceTimer();
+        RefreshUI();
+    }
+
+    void TickAllDownGraceTimer()
+    {
+        if (!IsAllDownGraceActive)
+        {
+            return;
+        }
+
+        allDownGraceRemaining -= Time.deltaTime;
+        if (allDownGraceRemaining <= 0f)
+        {
+            allDownGraceRemaining = -1f;
+            Lose("El equipo de IT desapareció");
+        }
+    }
+
+    public void OnPlayerIncapacitated()
+    {
+        CheckTeamDefeatConditions();
+    }
+
+    public void OnPlayerRevived()
+    {
+        if (HasAnyActivePlayer())
+        {
+            allDownGraceRemaining = -1f;
+        }
+    }
+
+    public void SetReviveProgress(string message)
+    {
+        reviveProgressMessage = message;
         RefreshUI();
     }
 
@@ -129,8 +171,16 @@ public class GameManager : MonoBehaviour
 
         if (!HasAnyActivePlayer())
         {
-            Lose("El equipo de IT desapareció");
+            if (allDownGraceRemaining < 0f)
+            {
+                allDownGraceRemaining = AllDownGraceDuration;
+                ShowTemporaryMessage($"¡Todo el equipo caído! Tienen {AllDownGraceDuration:0} segundos para levantarse...");
+            }
+
+            return;
         }
+
+        allDownGraceRemaining = -1f;
     }
 
     public static bool HasAnyActivePlayer()

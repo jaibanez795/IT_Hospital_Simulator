@@ -5,6 +5,8 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(PlayerStats))]
 public class PlayerController : MonoBehaviour
 {
+    const float ReviveDuration = 3f;
+
     [SerializeField] int playerIndex = 1;
     [SerializeField] float moveSpeed = 30f;
     [SerializeField] float interactionRadius = 2f;
@@ -18,6 +20,13 @@ public class PlayerController : MonoBehaviour
     Vector3 lastFramePosition;
     IInteractable nearbyInteractable;
     PlayerStats stats;
+    PlayerController nearbyIncapacitatedPlayer;
+    float reviveProgress;
+
+    Renderer playerRenderer;
+    Color originalColor;
+    Vector3 originalScale;
+    bool hasVisualDefaults;
 
     public int PlayerIndex => playerIndex;
     public PlayerStats Stats => stats;
@@ -34,6 +43,17 @@ public class PlayerController : MonoBehaviour
     public void SetInHideZone(bool inside)
     {
         inHideZone = inside;
+    }
+
+    public void OnIncapacitated()
+    {
+        SetInHideZone(false);
+        ApplyIncapacitatedVisual();
+    }
+
+    public void OnRevived()
+    {
+        RestoreActiveVisual();
     }
 
     public bool AppearsOccupied()
@@ -80,6 +100,50 @@ public class PlayerController : MonoBehaviour
 
         stats = GetComponent<PlayerStats>();
         stats.Configure(playerIndex);
+
+        CacheVisualDefaults();
+    }
+
+    void CacheVisualDefaults()
+    {
+        playerRenderer = GetComponentInChildren<Renderer>();
+        originalScale = transform.localScale;
+
+        if (playerRenderer != null)
+        {
+            originalColor = playerRenderer.material.color;
+            hasVisualDefaults = true;
+        }
+    }
+
+    void ApplyIncapacitatedVisual()
+    {
+        if (!hasVisualDefaults)
+        {
+            CacheVisualDefaults();
+        }
+
+        if (playerRenderer != null)
+        {
+            playerRenderer.material.color = new Color(0.5f, 0.5f, 0.5f, 0.45f);
+        }
+
+        transform.localScale = originalScale * 0.85f;
+    }
+
+    void RestoreActiveVisual()
+    {
+        if (!hasVisualDefaults)
+        {
+            return;
+        }
+
+        if (playerRenderer != null)
+        {
+            playerRenderer.material.color = originalColor;
+        }
+
+        transform.localScale = originalScale;
     }
 
     void Update()
@@ -95,6 +159,20 @@ public class PlayerController : MonoBehaviour
         }
 
         UpdateOccupancyTracking();
+        DetectNearbyIncapacitatedPlayer();
+
+        if (nearbyIncapacitatedPlayer != null && IsInteractHeld())
+        {
+            HandleReviveTeammate();
+            if (!minigameLocked)
+            {
+                HandleMovement();
+            }
+
+            return;
+        }
+
+        HandleReviveTeammate();
         DetectNearbyInteractable();
 
         if (minigameLocked)
@@ -185,6 +263,77 @@ public class PlayerController : MonoBehaviour
         return false;
     }
 
+    void DetectNearbyIncapacitatedPlayer()
+    {
+        nearbyIncapacitatedPlayer = null;
+        float closestDistance = float.MaxValue;
+
+        PlayerController[] players = FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+        foreach (PlayerController player in players)
+        {
+            if (player == null || player == this || player.IsActive)
+            {
+                continue;
+            }
+
+            if (player.Stats == null || !player.Stats.IsIncapacitated)
+            {
+                continue;
+            }
+
+            float distance = Vector3.Distance(transform.position, player.transform.position);
+            if (distance <= interactionRadius && distance < closestDistance)
+            {
+                closestDistance = distance;
+                nearbyIncapacitatedPlayer = player;
+            }
+        }
+    }
+
+    void HandleReviveTeammate()
+    {
+        if (nearbyIncapacitatedPlayer == null || !IsInteractHeld())
+        {
+            if (reviveProgress > 0f)
+            {
+                reviveProgress = 0f;
+                GameManager.Instance?.SetReviveProgress(null);
+            }
+
+            return;
+        }
+
+        reviveProgress += Time.deltaTime;
+        string helperLabel = stats != null ? stats.GetLabel() : $"J{playerIndex}";
+        string targetLabel = nearbyIncapacitatedPlayer.Stats != null
+            ? nearbyIncapacitatedPlayer.Stats.GetLabel()
+            : $"J{nearbyIncapacitatedPlayer.PlayerIndex}";
+
+        GameManager.Instance?.SetReviveProgress(
+            $"{helperLabel} está cubriendo a {targetLabel}: {reviveProgress:0.0}s / {ReviveDuration:0.0}s");
+
+        if (reviveProgress >= ReviveDuration)
+        {
+            nearbyIncapacitatedPlayer.Stats.RevivePlayer();
+            reviveProgress = 0f;
+            nearbyIncapacitatedPlayer = null;
+            GameManager.Instance?.SetReviveProgress(null);
+        }
+    }
+
+    bool IsInteractHeld()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null)
+        {
+            return false;
+        }
+
+        return playerIndex == 1
+            ? keyboard.eKey.isPressed
+            : keyboard.rightCtrlKey.isPressed || keyboard.enterKey.isPressed;
+    }
+
     void HandleMovement()
     {
         Vector3 input = ReadMovementInput();
@@ -251,6 +400,11 @@ public class PlayerController : MonoBehaviour
 
     public void AddSospecha(float amount)
     {
+        if (!IsActive)
+        {
+            return;
+        }
+
         stats?.AddSospecha(amount);
     }
 
